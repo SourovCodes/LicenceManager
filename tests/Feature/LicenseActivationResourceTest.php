@@ -287,11 +287,12 @@ describe('License Activations Relationship', function () {
         expect($license->activations)->toHaveCount(3);
     });
 
-    it('license can get active activations only', function () {
+    it('license can get active activation', function () {
         $license = License::factory()->create();
-        LicenseActivation::factory()->active()->count(2)->create(['license_id' => $license->id]);
+        $activeActivation = LicenseActivation::factory()->active()->create(['license_id' => $license->id]);
         LicenseActivation::factory()->deactivated()->create(['license_id' => $license->id]);
 
-        expect($license->activeActivations)->toHaveCount(2);
+        expect($license->activeActivation)->not->toBeNull()
+            ->and($license->activeActivation->id)->toBe($activeActivation->id);
     });
 });

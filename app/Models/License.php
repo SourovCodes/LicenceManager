@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class License extends Model
@@ -50,9 +51,9 @@ class License extends Model
         return $this->hasMany(LicenseActivation::class);
     }
 
-    public function activeActivations(): HasMany
+    public function activeActivation(): HasOne
     {
-        return $this->activations()->where('is_active', true);
+        return $this->hasOne(LicenseActivation::class)->where('is_active', true);
     }
 
     public function isActive(): bool
