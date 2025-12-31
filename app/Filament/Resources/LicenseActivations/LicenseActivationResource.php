@@ -55,6 +55,6 @@ class LicenseActivationResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['domain', 'ip_address', 'local_key', 'license.license_key', 'license.customer_name'];
+        return ['domain', 'ip_address', 'license.license_key', 'license.customer_name'];
     }
 }

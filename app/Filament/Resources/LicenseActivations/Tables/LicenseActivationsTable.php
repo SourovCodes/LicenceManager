@@ -44,15 +44,6 @@ class LicenseActivationsTable
                     ->sortable()
                     ->toggleable()
                     ->fontFamily('mono'),
-                TextColumn::make('local_key')
-                    ->label('Local Key')
-                    ->searchable()
-                    ->copyable()
-                    ->copyMessage('Local key copied!')
-                    ->fontFamily('mono')
-                    ->limit(12)
-                    ->tooltip(fn ($record) => $record->local_key)
-                    ->toggleable(isToggledHiddenByDefault: true),
                 IconColumn::make('is_active')
                     ->label('Active')
                     ->boolean()

@@ -126,23 +126,6 @@ describe('LicenseActivation Create', function () {
         ]);
     });
 
-    it('auto-generates local key on creation', function () {
-        $license = License::factory()->create();
-
-        Livewire::test(CreateLicenseActivation::class)
-            ->fillForm([
-                'license_id' => $license->id,
-                'domain' => 'testdomain.com',
-                'is_active' => true,
-            ])
-            ->call('create')
-            ->assertHasNoFormErrors();
-
-        $activation = LicenseActivation::where('domain', 'testdomain.com')->first();
-        expect($activation->local_key)->not->toBeNull()
-            ->and(strlen($activation->local_key))->toBe(32);
-    });
-
     it('requires a license', function () {
         Livewire::test(CreateLicenseActivation::class)
             ->fillForm([

@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Str;
 
 class LicenseActivation extends Model
 {
@@ -16,7 +15,6 @@ class LicenseActivation extends Model
         'license_id',
         'domain',
         'ip_address',
-        'local_key',
         'is_active',
         'activated_at',
         'deactivated_at',
@@ -60,17 +58,9 @@ class LicenseActivation extends Model
         ]);
     }
 
-    public static function generateLocalKey(): string
-    {
-        return strtoupper(Str::random(32));
-    }
-
     protected static function booted(): void
     {
         static::creating(function (LicenseActivation $activation) {
-            if (empty($activation->local_key)) {
-                $activation->local_key = static::generateLocalKey();
-            }
             if (empty($activation->activated_at)) {
                 $activation->activated_at = now();
             }

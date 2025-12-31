@@ -43,16 +43,10 @@ class LicenseActivationForm
                     ]),
 
                 Section::make('Activation Status')
-                    ->description('Manage the activation state and local key.')
+                    ->description('Manage the activation state.')
                     ->icon('heroicon-o-shield-check')
                     ->columns(2)
                     ->schema([
-                        TextInput::make('local_key')
-                            ->label('Local Key')
-                            ->maxLength(255)
-                            ->disabled()
-                            ->dehydrated()
-                            ->helperText('Auto-generated unique key for this activation.'),
                         Toggle::make('is_active')
                             ->label('Active')
                             ->default(true)

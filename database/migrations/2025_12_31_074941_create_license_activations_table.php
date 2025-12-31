@@ -16,7 +16,6 @@ return new class extends Migration
             $table->foreignId('license_id')->constrained()->cascadeOnDelete();
             $table->string('domain');
             $table->string('ip_address')->nullable();
-            $table->string('local_key')->nullable(); // A local validation key for offline checks
             $table->boolean('is_active')->default(true);
             $table->timestamp('activated_at');
             $table->timestamp('deactivated_at')->nullable();

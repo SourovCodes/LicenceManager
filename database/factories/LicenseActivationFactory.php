@@ -3,7 +3,6 @@
 namespace Database\Factories;
 
 use App\Models\License;
-use App\Models\LicenseActivation;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -22,7 +21,6 @@ class LicenseActivationFactory extends Factory
             'license_id' => License::factory(),
             'domain' => $this->faker->domainName(),
             'ip_address' => $this->faker->ipv4(),
-            'local_key' => LicenseActivation::generateLocalKey(),
             'is_active' => true,
             'activated_at' => $this->faker->dateTimeBetween('-1 year', 'now'),
             'deactivated_at' => null,
