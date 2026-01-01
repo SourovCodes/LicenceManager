@@ -232,7 +232,7 @@ describe('Validate License', function () {
 
         $response->assertOk()
             ->assertJson([
-                'valid' => true,
+                'success' => true,
                 'message' => 'License is valid.',
             ])
             ->assertJsonStructure(['expires_at', 'days_remaining']);
@@ -258,7 +258,7 @@ describe('Validate License', function () {
 
         $response->assertStatus(422)
             ->assertJson([
-                'valid' => false,
+                'success' => false,
                 'message' => 'License is not active on this domain.',
             ]);
     });
@@ -277,7 +277,7 @@ describe('Validate License', function () {
 
         $response->assertStatus(422)
             ->assertJson([
-                'valid' => false,
+                'success' => false,
                 'message' => 'License is not activated.',
             ]);
     });
@@ -303,7 +303,7 @@ describe('Validate License', function () {
 
         $response->assertStatus(422)
             ->assertJson([
-                'valid' => false,
+                'success' => false,
                 'message' => 'License is not valid for this product.',
             ]);
     });
@@ -325,6 +325,7 @@ describe('Deactivate License', function () {
         $response = $this->postJson('/api/v1/license/deactivate', [
             'license_key' => $license->license_key,
             'domain' => 'example.com',
+            'product_slug' => $this->product->slug,
         ]);
 
         $response->assertOk()
@@ -353,12 +354,39 @@ describe('Deactivate License', function () {
         $response = $this->postJson('/api/v1/license/deactivate', [
             'license_key' => $license->license_key,
             'domain' => 'wrong-domain.com',
+            'product_slug' => $this->product->slug,
         ]);
 
         $response->assertStatus(422)
             ->assertJson([
                 'success' => false,
                 'message' => 'No active license found on this domain.',
+            ]);
+    });
+
+    it('rejects deactivation for wrong product', function () {
+        $otherProduct = Product::factory()->create(['slug' => 'other-plugin']);
+        $license = License::factory()
+            ->for($otherProduct)
+            ->active()
+            ->create();
+
+        LicenseActivation::factory()->create([
+            'license_id' => $license->id,
+            'domain' => 'example.com',
+            'is_active' => true,
+        ]);
+
+        $response = $this->postJson('/api/v1/license/deactivate', [
+            'license_key' => $license->license_key,
+            'domain' => 'example.com',
+            'product_slug' => 'my-plugin',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'message' => 'License is not valid for this product.',
             ]);
     });
 });
@@ -390,7 +418,7 @@ describe('License Status', function () {
                     'license_key',
                     'status',
                     'product' => ['name', 'slug', 'type'],
-                    'customer' => ['name', 'email'],
+                    'customer_name',
                     'activation' => ['domain', 'activated_at'],
                     'expires_at',
                     'days_remaining',

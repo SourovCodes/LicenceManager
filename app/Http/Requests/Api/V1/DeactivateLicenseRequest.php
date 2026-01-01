@@ -19,6 +19,7 @@ class DeactivateLicenseRequest extends FormRequest
         return [
             'license_key' => ['required', 'string', 'max:50'],
             'domain' => ['required', 'string', 'max:255'],
+            'product_slug' => ['required', 'string', 'max:100'],
             'reason' => ['nullable', 'string', 'max:255'],
         ];
     }
@@ -31,6 +32,7 @@ class DeactivateLicenseRequest extends FormRequest
         return [
             'license_key.required' => 'License key is required.',
             'domain.required' => 'Domain is required.',
+            'product_slug.required' => 'Product identifier is required.',
         ];
     }
 }

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\LicenseStatus;
 use App\Models\License;
 use App\Models\LicenseActivation;
+use Illuminate\Support\Facades\DB;
 
 class LicenseService
 {
@@ -15,7 +16,9 @@ class LicenseService
      */
     public function activate(string $licenseKey, string $domain, string $productSlug, ?string $ipAddress = null): array
     {
-        $license = License::with('product')->where('license_key', $licenseKey)->first();
+        $license = License::with(['product', 'activeActivation'])
+            ->where('license_key', $licenseKey)
+            ->first();
 
         if (! $license) {
             return $this->error('License key not found.');
@@ -35,6 +38,10 @@ class LicenseService
 
         $domain = $this->normalizeDomain($domain);
 
+        if (! $domain) {
+            return $this->error('Invalid domain format.');
+        }
+
         // Check if already activated on this domain
         $existingActivation = $license->activations()
             ->where('domain', $domain)
@@ -53,55 +60,66 @@ class LicenseService
             if (! $license->canChangeDomain()) {
                 return $this->error('Maximum domain changes reached. Contact support.');
             }
-
-            // Deactivate current domain
-            $currentActivation->deactivate('Domain changed to: '.$domain);
-            $license->increment('domain_changes_used');
         }
 
-        // Create new activation
-        $activation = $license->activations()->create([
-            'domain' => $domain,
-            'ip_address' => $ipAddress,
-            'is_active' => true,
-            'activated_at' => now(),
-        ]);
+        // Use transaction to prevent race conditions
+        return DB::transaction(function () use ($license, $domain, $ipAddress, $currentActivation) {
+            // Lock the license row for update
+            $license = License::where('id', $license->id)->lockForUpdate()->first();
 
-        // Set license as active and set expiry on first activation
-        if (! $license->activated_at) {
-            $license->update([
-                'status' => LicenseStatus::Active,
+            if ($currentActivation) {
+                // Deactivate current domain
+                $currentActivation->deactivate('Domain changed to: '.$domain);
+                $license->increment('domain_changes_used');
+            }
+
+            // Create new activation
+            $activation = $license->activations()->create([
+                'domain' => $domain,
+                'ip_address' => $ipAddress,
+                'is_active' => true,
                 'activated_at' => now(),
-                'expires_at' => now()->addDays($license->validity_days),
             ]);
-        } elseif ($license->status !== LicenseStatus::Active) {
-            $license->update(['status' => LicenseStatus::Active]);
-        }
 
-        $license->refresh();
+            // Set license as active and set expiry on first activation
+            if (! $license->activated_at) {
+                $license->update([
+                    'status' => LicenseStatus::Active,
+                    'activated_at' => now(),
+                    'expires_at' => now()->addDays($license->validity_days),
+                ]);
+            } elseif ($license->status !== LicenseStatus::Active) {
+                $license->update(['status' => LicenseStatus::Active]);
+            }
 
-        return $this->success('License activated successfully.', $license, $activation);
+            $license->refresh();
+            $license->load('activeActivation');
+
+            return $this->success('License activated successfully.', $license, $activation);
+        });
     }
 
     /**
      * Validate a license for a domain.
      *
-     * @return array{valid: bool, message: string, license?: License}
+     * @return array{success: bool, message: string, expires_at?: string, days_remaining?: int}
      */
     public function validate(string $licenseKey, string $domain, string $productSlug): array
     {
-        $license = License::with('product')->where('license_key', $licenseKey)->first();
+        $license = License::with(['product', 'activeActivation'])
+            ->where('license_key', $licenseKey)
+            ->first();
 
         if (! $license) {
-            return ['valid' => false, 'message' => 'License key not found.'];
+            return $this->error('License key not found.');
         }
 
         if ($license->product->slug !== $productSlug) {
-            return ['valid' => false, 'message' => 'License is not valid for this product.'];
+            return $this->error('License is not valid for this product.');
         }
 
         if ($license->status === LicenseStatus::Revoked) {
-            return ['valid' => false, 'message' => 'License has been revoked.', 'license' => $license];
+            return $this->error('License has been revoked.');
         }
 
         if ($license->isExpired()) {
@@ -110,25 +128,28 @@ class LicenseService
                 $license->update(['status' => LicenseStatus::Expired]);
             }
 
-            return ['valid' => false, 'message' => 'License has expired.', 'license' => $license];
+            return $this->error('License has expired.');
         }
 
         $domain = $this->normalizeDomain($domain);
 
+        if (! $domain) {
+            return $this->error('Invalid domain format.');
+        }
+
         $activeActivation = $license->activeActivation;
 
         if (! $activeActivation) {
-            return ['valid' => false, 'message' => 'License is not activated.', 'license' => $license];
+            return $this->error('License is not activated.');
         }
 
         if ($activeActivation->domain !== $domain) {
-            return ['valid' => false, 'message' => 'License is not active on this domain.', 'license' => $license];
+            return $this->error('License is not active on this domain.');
         }
 
         return [
-            'valid' => true,
+            'success' => true,
             'message' => 'License is valid.',
-            'license' => $license,
             'expires_at' => $license->expires_at?->toIso8601String(),
             'days_remaining' => $license->daysUntilExpiry(),
         ];
@@ -137,17 +158,25 @@ class LicenseService
     /**
      * Deactivate a license from its current domain.
      *
-     * @return array{success: bool, message: string, license?: License}
+     * @return array{success: bool, message: string}
      */
-    public function deactivate(string $licenseKey, string $domain, ?string $reason = null): array
+    public function deactivate(string $licenseKey, string $domain, string $productSlug, ?string $reason = null): array
     {
-        $license = License::where('license_key', $licenseKey)->first();
+        $license = License::with('product')->where('license_key', $licenseKey)->first();
 
         if (! $license) {
             return $this->error('License key not found.');
         }
 
+        if ($license->product->slug !== $productSlug) {
+            return $this->error('License is not valid for this product.');
+        }
+
         $domain = $this->normalizeDomain($domain);
+
+        if (! $domain) {
+            return $this->error('Invalid domain format.');
+        }
 
         $activeActivation = $license->activations()
             ->where('domain', $domain)
@@ -160,7 +189,7 @@ class LicenseService
 
         $activeActivation->deactivate($reason ?? 'Deactivated by user');
 
-        return $this->success('License deactivated successfully.', $license->refresh());
+        return $this->success('License deactivated successfully.');
     }
 
     /**
@@ -186,14 +215,36 @@ class LicenseService
     }
 
     /**
-     * Normalize domain (remove protocol, www, trailing slashes).
+     * Normalize domain (remove protocol, www, paths, ports, trailing slashes).
      */
-    private function normalizeDomain(string $domain): string
+    private function normalizeDomain(string $domain): ?string
     {
         $domain = strtolower(trim($domain));
+
+        // Remove protocol
         $domain = preg_replace('#^https?://#', '', $domain);
+
+        // Remove www prefix
         $domain = preg_replace('#^www\.#', '', $domain);
-        $domain = rtrim($domain, '/');
+
+        // Remove path (everything after first /)
+        $domain = explode('/', $domain)[0];
+
+        // Remove port
+        $domain = explode(':', $domain)[0];
+
+        // Remove trailing dots
+        $domain = rtrim($domain, '.');
+
+        // Basic validation: must have at least one dot or be localhost
+        if ($domain !== 'localhost' && ! str_contains($domain, '.')) {
+            return null;
+        }
+
+        // Check for valid domain characters
+        if (! preg_match('/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/', $domain)) {
+            return null;
+        }
 
         return $domain;
     }
@@ -201,9 +252,13 @@ class LicenseService
     /**
      * @return array{success: bool, message: string, license?: License, activation?: LicenseActivation}
      */
-    private function success(string $message, License $license, ?LicenseActivation $activation = null): array
+    private function success(string $message, ?License $license = null, ?LicenseActivation $activation = null): array
     {
-        $result = ['success' => true, 'message' => $message, 'license' => $license];
+        $result = ['success' => true, 'message' => $message];
+
+        if ($license) {
+            $result['license'] = $license;
+        }
 
         if ($activation) {
             $result['activation'] = $activation;

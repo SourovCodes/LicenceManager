@@ -23,10 +23,7 @@ class LicenseStatusResource extends JsonResource
                 'slug' => $this->product->slug,
                 'type' => $this->product->type->value,
             ],
-            'customer' => [
-                'name' => $this->customer_name,
-                'email' => $this->customer_email,
-            ],
+            'customer_name' => $this->customer_name,
             'activation' => $this->whenLoaded('activeActivation', fn () => [
                 'domain' => $this->activeActivation->domain,
                 'activated_at' => $this->activeActivation->activated_at?->toIso8601String(),

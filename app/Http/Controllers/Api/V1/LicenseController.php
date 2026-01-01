@@ -55,17 +55,19 @@ class LicenseController extends Controller
             productSlug: $request->validated('product_slug')
         );
 
-        $response = [
-            'valid' => $result['valid'],
-            'message' => $result['message'],
-        ];
-
-        if ($result['valid']) {
-            $response['expires_at'] = $result['expires_at'];
-            $response['days_remaining'] = $result['days_remaining'];
+        if (! $result['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'],
+            ], 422);
         }
 
-        return response()->json($response, $result['valid'] ? 200 : 422);
+        return response()->json([
+            'success' => true,
+            'message' => $result['message'],
+            'expires_at' => $result['expires_at'],
+            'days_remaining' => $result['days_remaining'],
+        ]);
     }
 
     /**
@@ -76,6 +78,7 @@ class LicenseController extends Controller
         $result = $this->licenseService->deactivate(
             licenseKey: $request->validated('license_key'),
             domain: $request->validated('domain'),
+            productSlug: $request->validated('product_slug'),
             reason: $request->validated('reason')
         );
 
