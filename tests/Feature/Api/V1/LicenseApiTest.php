@@ -24,7 +24,6 @@ describe('Activate License', function () {
 
         $response->assertOk()
             ->assertJson([
-                'success' => true,
                 'message' => 'License activated successfully.',
             ]);
 
@@ -70,7 +69,6 @@ describe('Activate License', function () {
 
         $response->assertOk()
             ->assertJson([
-                'success' => true,
                 'message' => 'License is already active on this domain.',
             ]);
     });
@@ -126,7 +124,6 @@ describe('Activate License', function () {
 
         $response->assertStatus(422)
             ->assertJson([
-                'success' => false,
                 'message' => 'Maximum domain changes reached. Contact support.',
             ]);
     });
@@ -145,7 +142,6 @@ describe('Activate License', function () {
 
         $response->assertStatus(422)
             ->assertJson([
-                'success' => false,
                 'message' => 'License has been revoked.',
             ]);
     });
@@ -164,7 +160,6 @@ describe('Activate License', function () {
 
         $response->assertStatus(422)
             ->assertJson([
-                'success' => false,
                 'message' => 'License has expired.',
             ]);
     });
@@ -178,7 +173,6 @@ describe('Activate License', function () {
 
         $response->assertStatus(422)
             ->assertJson([
-                'success' => false,
                 'message' => 'License key not found.',
             ]);
     });
@@ -198,7 +192,6 @@ describe('Activate License', function () {
 
         $response->assertStatus(422)
             ->assertJson([
-                'success' => false,
                 'message' => 'License is not valid for this product.',
             ]);
     });
@@ -232,7 +225,6 @@ describe('Validate License', function () {
 
         $response->assertOk()
             ->assertJson([
-                'success' => true,
                 'message' => 'License is valid.',
             ])
             ->assertJsonStructure(['expires_at', 'days_remaining']);
@@ -258,7 +250,6 @@ describe('Validate License', function () {
 
         $response->assertStatus(422)
             ->assertJson([
-                'success' => false,
                 'message' => 'License is not active on this domain.',
             ]);
     });
@@ -277,7 +268,6 @@ describe('Validate License', function () {
 
         $response->assertStatus(422)
             ->assertJson([
-                'success' => false,
                 'message' => 'License is not activated.',
             ]);
     });
@@ -303,7 +293,6 @@ describe('Validate License', function () {
 
         $response->assertStatus(422)
             ->assertJson([
-                'success' => false,
                 'message' => 'License is not valid for this product.',
             ]);
     });
@@ -330,7 +319,6 @@ describe('Deactivate License', function () {
 
         $response->assertOk()
             ->assertJson([
-                'success' => true,
                 'message' => 'License deactivated successfully.',
             ]);
 
@@ -359,7 +347,6 @@ describe('Deactivate License', function () {
 
         $response->assertStatus(422)
             ->assertJson([
-                'success' => false,
                 'message' => 'No active license found on this domain.',
             ]);
     });
@@ -385,7 +372,6 @@ describe('Deactivate License', function () {
 
         $response->assertStatus(422)
             ->assertJson([
-                'success' => false,
                 'message' => 'License is not valid for this product.',
             ]);
     });
@@ -412,7 +398,6 @@ describe('License Status', function () {
         ]);
 
         $response->assertOk()
-            ->assertJson(['success' => true])
             ->assertJsonStructure([
                 'data' => [
                     'license_key',
@@ -439,7 +424,6 @@ describe('License Status', function () {
 
         $response->assertNotFound()
             ->assertJson([
-                'success' => false,
                 'message' => 'License key not found.',
             ]);
     });

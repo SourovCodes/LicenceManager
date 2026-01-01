@@ -56,7 +56,6 @@ curl -X POST https://licence-manager.jonakyds.com/api/v1/license/activate \
 
 ```json
 {
-  "success": true,
   "message": "License activated successfully.",
   "data": {
     "license_key": "XXXX-XXXX-XXXX-XXXX",
@@ -73,7 +72,6 @@ curl -X POST https://licence-manager.jonakyds.com/api/v1/license/activate \
 
 ```json
 {
-  "success": false,
   "message": "License key not found."
 }
 ```
@@ -121,7 +119,6 @@ curl -X POST https://licence-manager.jonakyds.com/api/v1/license/validate \
 
 ```json
 {
-  "success": true,
   "message": "License is valid.",
   "expires_at": "2027-01-01T12:00:00+00:00",
   "days_remaining": 365
@@ -132,7 +129,6 @@ curl -X POST https://licence-manager.jonakyds.com/api/v1/license/validate \
 
 ```json
 {
-  "success": false,
   "message": "License is not active on this domain."
 }
 ```
@@ -183,7 +179,6 @@ curl -X POST https://licence-manager.jonakyds.com/api/v1/license/deactivate \
 
 ```json
 {
-  "success": true,
   "message": "License deactivated successfully."
 }
 ```
@@ -192,7 +187,6 @@ curl -X POST https://licence-manager.jonakyds.com/api/v1/license/deactivate \
 
 ```json
 {
-  "success": false,
   "message": "No active license found on this domain."
 }
 ```
@@ -234,7 +228,6 @@ curl -X POST https://licence-manager.jonakyds.com/api/v1/license/status \
 
 ```json
 {
-  "success": true,
   "data": {
     "license_key": "XXXX-XXXX-XXXX-XXXX",
     "status": "active",
@@ -264,7 +257,6 @@ curl -X POST https://licence-manager.jonakyds.com/api/v1/license/status \
 
 ```json
 {
-  "success": false,
   "message": "License key not found."
 }
 ```
@@ -390,13 +382,13 @@ $client = new LicenseClient('https://licence-manager.jonakyds.com/api/v1', 'my-p
 
 // Activate license
 $result = $client->activate('XXXX-XXXX-XXXX-XXXX', 'example.com');
-if ($result['success']) {
+if (isset($result['data'])) {
     echo "License activated! Expires: " . $result['data']['expires_at'];
 }
 
 // Validate license
 $result = $client->validate('XXXX-XXXX-XXXX-XXXX', 'example.com');
-if ($result['success']) {
+if (isset($result['expires_at'])) {
     echo "License valid! Days remaining: " . $result['days_remaining'];
 }
 ```
@@ -436,8 +428,8 @@ class MyPluginLicense
             return false;
         }
 
-        $body = json_decode(wp_remote_retrieve_body($response), true);
-        return $body['success'] ?? false;
+        $status = wp_remote_retrieve_response_code($response);
+        return $status === 200;
     }
 
     public function activate(string $licenseKey): array
@@ -452,7 +444,7 @@ class MyPluginLicense
         ]);
 
         if (is_wp_error($response)) {
-            return ['success' => false, 'message' => $response->get_error_message()];
+            return ['message' => $response->get_error_message()];
         }
 
         return json_decode(wp_remote_retrieve_body($response), true);

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\LicenseStatus;
 use App\Models\License;
 use App\Models\LicenseActivation;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\DB;
 
 class LicenseService
@@ -12,7 +13,7 @@ class LicenseService
     /**
      * Activate a license on a domain.
      *
-     * @return array{success: bool, message: string, license?: License, activation?: LicenseActivation}
+     * @return array{message: string, license: License, activation: LicenseActivation}
      */
     public function activate(string $licenseKey, string $domain, string $productSlug, ?string $ipAddress = null): array
     {
@@ -21,25 +22,25 @@ class LicenseService
             ->first();
 
         if (! $license) {
-            return $this->error('License key not found.');
+            $this->abort('License key not found.');
         }
 
         if ($license->product->slug !== $productSlug) {
-            return $this->error('License is not valid for this product.');
+            $this->abort('License is not valid for this product.');
         }
 
         if ($license->status === LicenseStatus::Revoked) {
-            return $this->error('License has been revoked.');
+            $this->abort('License has been revoked.');
         }
 
         if ($license->isExpired()) {
-            return $this->error('License has expired.');
+            $this->abort('License has expired.');
         }
 
         $domain = $this->normalizeDomain($domain);
 
         if (! $domain) {
-            return $this->error('Invalid domain format.');
+            $this->abort('Invalid domain format.');
         }
 
         // Check if already activated on this domain
@@ -49,7 +50,11 @@ class LicenseService
             ->first();
 
         if ($existingActivation) {
-            return $this->success('License is already active on this domain.', $license, $existingActivation);
+            return [
+                'message' => 'License is already active on this domain.',
+                'license' => $license,
+                'activation' => $existingActivation,
+            ];
         }
 
         // Check if there's an active activation on another domain
@@ -58,7 +63,7 @@ class LicenseService
         if ($currentActivation) {
             // Need to change domain - check if allowed
             if (! $license->canChangeDomain()) {
-                return $this->error('Maximum domain changes reached. Contact support.');
+                $this->abort('Maximum domain changes reached. Contact support.');
             }
         }
 
@@ -95,14 +100,18 @@ class LicenseService
             $license->refresh();
             $license->load('activeActivation');
 
-            return $this->success('License activated successfully.', $license, $activation);
+            return [
+                'message' => 'License activated successfully.',
+                'license' => $license,
+                'activation' => $activation,
+            ];
         });
     }
 
     /**
      * Validate a license for a domain.
      *
-     * @return array{success: bool, message: string, expires_at?: string, days_remaining?: int}
+     * @return array{message: string, expires_at: string, days_remaining: int}
      */
     public function validate(string $licenseKey, string $domain, string $productSlug): array
     {
@@ -111,15 +120,15 @@ class LicenseService
             ->first();
 
         if (! $license) {
-            return $this->error('License key not found.');
+            $this->abort('License key not found.');
         }
 
         if ($license->product->slug !== $productSlug) {
-            return $this->error('License is not valid for this product.');
+            $this->abort('License is not valid for this product.');
         }
 
         if ($license->status === LicenseStatus::Revoked) {
-            return $this->error('License has been revoked.');
+            $this->abort('License has been revoked.');
         }
 
         if ($license->isExpired()) {
@@ -128,27 +137,26 @@ class LicenseService
                 $license->update(['status' => LicenseStatus::Expired]);
             }
 
-            return $this->error('License has expired.');
+            $this->abort('License has expired.');
         }
 
         $domain = $this->normalizeDomain($domain);
 
         if (! $domain) {
-            return $this->error('Invalid domain format.');
+            $this->abort('Invalid domain format.');
         }
 
         $activeActivation = $license->activeActivation;
 
         if (! $activeActivation) {
-            return $this->error('License is not activated.');
+            $this->abort('License is not activated.');
         }
 
         if ($activeActivation->domain !== $domain) {
-            return $this->error('License is not active on this domain.');
+            $this->abort('License is not active on this domain.');
         }
 
         return [
-            'success' => true,
             'message' => 'License is valid.',
             'expires_at' => $license->expires_at?->toIso8601String(),
             'days_remaining' => $license->daysUntilExpiry(),
@@ -158,24 +166,24 @@ class LicenseService
     /**
      * Deactivate a license from its current domain.
      *
-     * @return array{success: bool, message: string}
+     * @return array{message: string}
      */
     public function deactivate(string $licenseKey, string $domain, string $productSlug, ?string $reason = null): array
     {
         $license = License::with('product')->where('license_key', $licenseKey)->first();
 
         if (! $license) {
-            return $this->error('License key not found.');
+            $this->abort('License key not found.');
         }
 
         if ($license->product->slug !== $productSlug) {
-            return $this->error('License is not valid for this product.');
+            $this->abort('License is not valid for this product.');
         }
 
         $domain = $this->normalizeDomain($domain);
 
         if (! $domain) {
-            return $this->error('Invalid domain format.');
+            $this->abort('Invalid domain format.');
         }
 
         $activeActivation = $license->activations()
@@ -184,25 +192,25 @@ class LicenseService
             ->first();
 
         if (! $activeActivation) {
-            return $this->error('No active license found on this domain.');
+            $this->abort('No active license found on this domain.');
         }
 
         $activeActivation->deactivate($reason ?? 'Deactivated by user');
 
-        return $this->success('License deactivated successfully.');
+        return ['message' => 'License deactivated successfully.'];
     }
 
     /**
      * Get license status and details.
      *
-     * @return array{success: bool, license?: License, message?: string}
+     * @return License
      */
-    public function status(string $licenseKey): array
+    public function status(string $licenseKey): License
     {
         $license = License::with(['product', 'activeActivation'])->where('license_key', $licenseKey)->first();
 
         if (! $license) {
-            return ['success' => false, 'message' => 'License key not found.'];
+            $this->abort('License key not found.', 404);
         }
 
         // Check and update expired status
@@ -211,7 +219,7 @@ class LicenseService
             $license->refresh();
         }
 
-        return ['success' => true, 'license' => $license];
+        return $license;
     }
 
     /**
@@ -250,28 +258,14 @@ class LicenseService
     }
 
     /**
-     * @return array{success: bool, message: string, license?: License, activation?: LicenseActivation}
+     * Abort with a JSON error response.
+     *
+     * @throws HttpResponseException
      */
-    private function success(string $message, ?License $license = null, ?LicenseActivation $activation = null): array
+    private function abort(string $message, int $status = 422): never
     {
-        $result = ['success' => true, 'message' => $message];
-
-        if ($license) {
-            $result['license'] = $license;
-        }
-
-        if ($activation) {
-            $result['activation'] = $activation;
-        }
-
-        return $result;
-    }
-
-    /**
-     * @return array{success: bool, message: string}
-     */
-    private function error(string $message): array
-    {
-        return ['success' => false, 'message' => $message];
+        throw new HttpResponseException(
+            response()->json(['message' => $message], $status)
+        );
     }
 }

@@ -30,15 +30,7 @@ class LicenseController extends Controller
             ipAddress: $request->ip()
         );
 
-        if (! $result['success']) {
-            return response()->json([
-                'success' => false,
-                'message' => $result['message'],
-            ], 422);
-        }
-
         return response()->json([
-            'success' => true,
             'message' => $result['message'],
             'data' => new LicenseResource($result['license']),
         ]);
@@ -55,19 +47,7 @@ class LicenseController extends Controller
             productSlug: $request->validated('product_slug')
         );
 
-        if (! $result['success']) {
-            return response()->json([
-                'success' => false,
-                'message' => $result['message'],
-            ], 422);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => $result['message'],
-            'expires_at' => $result['expires_at'],
-            'days_remaining' => $result['days_remaining'],
-        ]);
+        return response()->json($result);
     }
 
     /**
@@ -82,17 +62,7 @@ class LicenseController extends Controller
             reason: $request->validated('reason')
         );
 
-        if (! $result['success']) {
-            return response()->json([
-                'success' => false,
-                'message' => $result['message'],
-            ], 422);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => $result['message'],
-        ]);
+        return response()->json($result);
     }
 
     /**
@@ -100,20 +70,12 @@ class LicenseController extends Controller
      */
     public function status(LicenseStatusRequest $request): JsonResponse
     {
-        $result = $this->licenseService->status(
+        $license = $this->licenseService->status(
             licenseKey: $request->validated('license_key')
         );
 
-        if (! $result['success']) {
-            return response()->json([
-                'success' => false,
-                'message' => $result['message'],
-            ], 404);
-        }
-
         return response()->json([
-            'success' => true,
-            'data' => new LicenseStatusResource($result['license']),
+            'data' => new LicenseStatusResource($license),
         ]);
     }
 }
