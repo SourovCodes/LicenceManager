@@ -12,7 +12,7 @@ require 'recipe/laravel.php';
 
 set('repository', 'https://github.com/SourovCodes/LicenceManager.git');
 set('branch', getenv('DEPLOY_BRANCH') ?: 'main');
-set('keep_releases', 3);
+set('keep_releases', 2);
 
 /*
 |--------------------------------------------------------------------------
