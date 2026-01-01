@@ -42,7 +42,7 @@ class LicenseFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'status' => LicenseStatus::Active,
             'activated_at' => now()->subDays(30),
-            'expires_at' => now()->addDays($attributes['validity_days'] - 30),
+            'expires_at' => now()->addDays(max(30, $attributes['validity_days'] - 30)),
         ]);
     }
 
