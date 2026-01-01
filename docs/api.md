@@ -1,7 +1,7 @@
 # License Manager API Documentation
 
 **Version:** 1.0  
-**Base URL:** `http://localhost:8000/api/v1`
+**Base URL:** `https://licence-manager.jonakyds.com/api/v1`
 
 ## Overview
 
@@ -43,7 +43,7 @@ Activate a license key on a specific domain.
 #### Example Request
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/license/activate \
+curl -X POST https://licence-manager.jonakyds.com/api/v1/license/activate \
   -H "Content-Type: application/json" \
   -d '{
     "license_key": "XXXX-XXXX-XXXX-XXXX",
@@ -108,7 +108,7 @@ Check if a license is valid and active on a specific domain.
 #### Example Request
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/license/validate \
+curl -X POST https://licence-manager.jonakyds.com/api/v1/license/validate \
   -H "Content-Type: application/json" \
   -d '{
     "license_key": "XXXX-XXXX-XXXX-XXXX",
@@ -169,7 +169,7 @@ Deactivate a license from a specific domain.
 #### Example Request
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/license/deactivate \
+curl -X POST https://licence-manager.jonakyds.com/api/v1/license/deactivate \
   -H "Content-Type: application/json" \
   -d '{
     "license_key": "XXXX-XXXX-XXXX-XXXX",
@@ -223,7 +223,7 @@ Get detailed status information about a license.
 #### Example Request
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/license/status \
+curl -X POST https://licence-manager.jonakyds.com/api/v1/license/status \
   -H "Content-Type: application/json" \
   -d '{
     "license_key": "XXXX-XXXX-XXXX-XXXX"
@@ -386,7 +386,7 @@ class LicenseClient
 }
 
 // Usage
-$client = new LicenseClient('http://localhost:8000/api/v1', 'my-product');
+$client = new LicenseClient('https://licence-manager.jonakyds.com/api/v1', 'my-product');
 
 // Activate license
 $result = $client->activate('XXXX-XXXX-XXXX-XXXX', 'example.com');
@@ -413,7 +413,7 @@ if ($result['success']) {
 
 class MyPluginLicense
 {
-    private const API_URL = 'http://localhost:8000/api/v1';
+    private const API_URL = 'https://licence-manager.jonakyds.com/api/v1';
     private const PRODUCT_SLUG = 'my-plugin';
 
     public function validate(): bool
