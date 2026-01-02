@@ -54,7 +54,18 @@ class ProcessNaldaCsvUpload implements ShouldQueue
         $localPath = $media->getPath();
         $remotePath = $media->file_name;
 
-        if (! $sftp->put($remotePath, $localPath, SFTP::SOURCE_LOCAL_FILE)) {
+        $fileContents = file_get_contents($localPath);
+
+        if ($fileContents === false) {
+            $uploadRequest->update([
+                'status' => NaldaCsvUploadStatus::Failed,
+                'error_message' => 'Failed to read CSV file from storage.',
+            ]);
+
+            return;
+        }
+
+        if (! $sftp->put($remotePath, $fileContents)) {
             $uploadRequest->update([
                 'status' => NaldaCsvUploadStatus::Failed,
                 'error_message' => 'Failed to upload file to SFTP server.',
