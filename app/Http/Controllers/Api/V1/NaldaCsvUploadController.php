@@ -38,7 +38,7 @@ class NaldaCsvUploadController extends Controller
             $uploadRequest->addMediaFromRequest('csv')->toMediaCollection('csv');
         }
 
-        ProcessNaldaCsvUpload::dispatchSync($uploadRequest->id);
+        ProcessNaldaCsvUpload::dispatch($uploadRequest->id);
 
         return response()->json([
             'message' => 'CSV upload request created successfully.',
