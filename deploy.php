@@ -119,7 +119,8 @@ task('deploy:npm', function () {
 */
 
 task('permissions:fix', function () {
-    run('chmod -R 775 {{release_path}}/storage {{release_path}}/bootstrap/cache');
+    // Use find to only chmod files owned by the deploy user, avoiding permission errors on www-data owned files
+    run('find {{release_path}}/storage {{release_path}}/bootstrap/cache -user $(whoami) -exec chmod 775 {} \; 2>/dev/null || true');
 })->desc('Fix Laravel writable permissions');
 
 /*
