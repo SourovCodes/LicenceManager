@@ -52,7 +52,7 @@ class NaldaCsvUploadController extends Controller
 
         $uploadRequests = NaldaCsvUploadRequest::where('license_id', $license->id)
             ->latest()
-            ->paginate($request->input('per_page', 15));
+            ->paginate(min((int) $request->input('per_page', 15), 15));
 
         return NaldaCsvUploadRequestResource::collection($uploadRequests);
     }

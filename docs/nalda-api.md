@@ -279,7 +279,7 @@ Get a paginated list of all CSV upload requests for the authenticated license.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `per_page` | integer | No | 15 | Number of results per page |
+| `per_page` | integer | No | 15 | Number of results per page (max 15) |
 | `page` | integer | No | 1 | Page number |
 
 #### Example Request
