@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\LicenseController;
+use App\Http\Controllers\Api\V1\NaldaCsvUploadController;
 use App\Http\Controllers\Api\V1\SftpController;
 use Illuminate\Support\Facades\Route;
 
@@ -26,5 +27,10 @@ Route::prefix('v1')->name('api.v1.')->middleware('throttle:60,1')->group(functio
 
     Route::prefix('sftp')->name('sftp.')->group(function () {
         Route::post('/validate', [SftpController::class, 'validate'])->name('validate');
+    });
+
+    Route::prefix('nalda')->name('nalda.')->group(function () {
+        Route::post('/csv-upload', [NaldaCsvUploadController::class, 'store'])->name('csv-upload.store');
+        Route::get('/csv-uploads', [NaldaCsvUploadController::class, 'index'])->name('csv-upload.index');
     });
 });
