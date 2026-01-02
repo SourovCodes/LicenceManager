@@ -19,7 +19,7 @@ describe('SFTP Validation API', function () {
 
         $response->assertUnauthorized()
             ->assertJson([
-                'message' => 'License key is required in X-License-Key header.',
+                'message' => 'X-License-Key header is required.',
             ]);
     });
 
@@ -40,7 +40,9 @@ describe('SFTP Validation API', function () {
     });
 
     it('rejects inactive license', function () {
-        $license = License::factory()->for($this->product)->revoked()->create();
+        $license = License::factory()->for($this->product)->revoked()->create([
+            'expires_at' => now()->addDays(30),
+        ]);
 
         $response = $this->postJson('/api/v1/sftp/validate', [
             'sftp_host' => 'sftp.example.com',
