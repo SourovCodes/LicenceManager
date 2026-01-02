@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\NaldaCsvUploadStatus;
 use App\Http\Controllers\Api\V1\Concerns\ValidatesLicenseHeader;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreNaldaCsvUploadRequest;
@@ -29,6 +30,7 @@ class NaldaCsvUploadController extends Controller
             'sftp_port' => $request->validated('sftp_port', 22),
             'sftp_username' => $request->validated('sftp_username'),
             'sftp_password' => $request->validated('sftp_password'),
+            'status' => NaldaCsvUploadStatus::Pending,
         ]);
 
         if ($request->hasFile('csv')) {
