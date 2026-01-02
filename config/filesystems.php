@@ -38,6 +38,14 @@ return [
             'report' => false,
         ],
 
+        'csv' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/csv'),
+            'serve' => true,
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

@@ -24,7 +24,7 @@ class NaldaCsvUploadRequestResource extends JsonResource
             'status' => $this->status,
             'processed_at' => $this->processed_at?->toIso8601String(),
             'error_message' => $this->error_message,
-            'csv_url' => $this->getFirstMediaUrl('csv'),
+            'csv_url' => $this->getFirstMedia('csv')?->getTemporaryUrl(now()->addMinutes(30)),
             'created_at' => $this->created_at->toIso8601String(),
             'updated_at' => $this->updated_at->toIso8601String(),
         ];
