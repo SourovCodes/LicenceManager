@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\Concerns\ValidatesLicenseHeader;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreNaldaCsvUploadRequest;
 use App\Http\Resources\Api\V1\NaldaCsvUploadRequestResource;
+use App\Jobs\ProcessNaldaCsvUpload;
 use App\Models\NaldaCsvUploadRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -36,6 +37,8 @@ class NaldaCsvUploadController extends Controller
         if ($request->hasFile('csv')) {
             $uploadRequest->addMediaFromRequest('csv')->toMediaCollection('csv');
         }
+
+        ProcessNaldaCsvUpload::dispatchSync($uploadRequest->id);
 
         return response()->json([
             'message' => 'CSV upload request created successfully.',
