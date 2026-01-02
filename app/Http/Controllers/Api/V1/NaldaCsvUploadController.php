@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Api\V1\Concerns\ValidatesLicenseHeader;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreNaldaCsvUploadRequest;
 use App\Http\Resources\Api\V1\NaldaCsvUploadRequestResource;
-use App\Models\License;
 use App\Models\NaldaCsvUploadRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,6 +13,8 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class NaldaCsvUploadController extends Controller
 {
+    use ValidatesLicenseHeader;
+
     /**
      * Store a new CSV upload request.
      */
@@ -51,21 +53,5 @@ class NaldaCsvUploadController extends Controller
             ->paginate($request->input('per_page', 15));
 
         return NaldaCsvUploadRequestResource::collection($uploadRequests);
-    }
-
-    /**
-     * Get license from X-License-Key header.
-     */
-    private function getLicenseFromHeader(Request $request): License
-    {
-        $licenseKey = $request->header('X-License-Key');
-
-        abort_if(! $licenseKey, 401, 'X-License-Key header is required.');
-
-        $license = License::where('license_key', $licenseKey)->first();
-
-        abort_if(! $license, 401, 'Invalid license key.');
-
-        return $license;
     }
 }

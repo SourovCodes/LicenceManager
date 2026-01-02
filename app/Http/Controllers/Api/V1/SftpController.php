@@ -2,49 +2,22 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Enums\LicenseStatus;
+use App\Http\Controllers\Api\V1\Concerns\ValidatesLicenseHeader;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\ValidateSftpRequest;
-use App\Models\License;
 use Illuminate\Http\JsonResponse;
 use phpseclib3\Net\SFTP;
 
 class SftpController extends Controller
 {
+    use ValidatesLicenseHeader;
+
     /**
      * Validate SFTP credentials with license key authentication.
      */
     public function validate(ValidateSftpRequest $request): JsonResponse
     {
-        $licenseKey = $request->header('X-License-Key');
-
-        if (! $licenseKey) {
-            return response()->json([
-                'message' => 'License key is required in X-License-Key header.',
-            ], 401);
-        }
-
-        $license = License::query()
-            ->where('license_key', $licenseKey)
-            ->first();
-
-        if (! $license) {
-            return response()->json([
-                'message' => 'Invalid license key.',
-            ], 401);
-        }
-
-        if ($license->isExpired()) {
-            return response()->json([
-                'message' => 'License has expired.',
-            ], 403);
-        }
-
-        if ($license->status !== LicenseStatus::Active) {
-            return response()->json([
-                'message' => 'License is not active.',
-            ], 403);
-        }
+        $this->getLicenseFromHeader($request);
 
         $sftpHost = $request->validated('sftp_host');
         $sftpPort = $request->validated('sftp_port');
